@@ -54,3 +54,4 @@ npm.cmd run llm -- .\examples\long_article.md .\output\my_test
 | `RESEARCH_PROCESS.md` | 调研与设计决策 |
 | `PROJECT_SUMMARY.md` | 最终实现总结 |
 
+老师使用自己的文章时，请直接阅读 `PROJECT_SUMMARY.md` 的“如何使用自己的文章”章节，其中给出了从放置 Markdown、检查 plan、生成 storyboard 到本地渲染 GIF 的完整命令。

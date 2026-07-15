@@ -139,7 +139,99 @@ npm.cmd run llm -- .\examples\long_article.md .\output\my_test
 
 复杂文章可切换 `deepseek-v4-pro`。所有 Key 都只能设置在本地环境变量中。
 
-## 7. 目录结构
+## 7. 如何使用自己的文章
+
+老师或其他使用者不需要修改 JavaScript，只需准备一篇 UTF-8 Markdown 或纯文本文章，并把文件放入项目目录。推荐结构：
+
+```text
+ai-comic-gif-pipeline/
+└─ articles/
+   └─ my_audio_ai_paper.md
+```
+
+Markdown 最好保留清晰标题：
+
+```markdown
+# 文章标题
+## 问题背景
+正文……
+## 方法
+正文……
+## 实验与结论
+正文……
+```
+
+### 7.1 安装并设置 DeepSeek
+
+```powershell
+cd C:\Users\shackelten\gif_test
+npm.cmd install
+$env:DEEPSEEK_API_KEY="你的 DeepSeek API Key"
+$env:LLM_PROVIDER="deepseek"
+$env:LLM_MODEL="deepseek-v4-flash"
+```
+
+依赖通常只需安装一次；环境变量只在当前 PowerShell 窗口有效。不要把 Key 写进项目文件。
+
+### 7.2 只生成全文规划
+
+```powershell
+npm.cmd run llm -- .\articles\my_audio_ai_paper.md .\output\my_audio_ai_paper --plan-only
+```
+
+检查生成的 `output/my_audio_ai_paper/plan.json`，确认主旨、章节、专业术语、内容取舍和视觉比喻。这样可避免规划错误时继续进行第二次 API 调用。
+
+### 7.3 生成 storyboard，但不渲染
+
+```powershell
+npm.cmd run llm -- .\articles\my_audio_ai_paper.md .\output\my_audio_ai_paper --no-render
+```
+
+程序会生成 `plan.json` 和 `storyboard.json`。建议检查每页是否只有 1–3 张卡片、标题是否简短、正文是否适合信息图。必要时可直接人工修改 JSON。
+
+注意：重新执行 `--no-render` 会再次调用 LLM。如果只想渲染已修改的 storyboard，应使用下一条本地命令。
+
+### 7.4 本地渲染已确认的 storyboard
+
+```powershell
+node .\comic_pipeline.js .\output\my_audio_ai_paper\storyboard.json .\output\my_audio_ai_paper
+```
+
+这一步完全在本地运行，不调用 LLM，也不会产生 API 费用。输出包括 `manifest.json` 和连续编号的 GIF。
+
+### 7.5 一条命令完成全部流程
+
+如果不需要中途检查：
+
+```powershell
+npm.cmd run llm -- .\articles\my_audio_ai_paper.md .\output\my_audio_ai_paper
+```
+
+它会依次执行：`全文规划 → storyboard → 本地 GIF 渲染`。第一次处理专业文章时，推荐采用 `--plan-only → --no-render → 本地渲染` 三步流程。
+
+### 7.6 切换质量与成本
+
+普通文章使用：
+
+```powershell
+$env:LLM_MODEL="deepseek-v4-flash"
+```
+
+长篇或专业性较强的文章可切换：
+
+```powershell
+$env:LLM_MODEL="deepseek-v4-pro"
+```
+
+### 7.7 常见问题
+
+- `Cannot find package 'openai'`：运行 `npm.cmd install`；
+- `Missing DEEPSEEK_API_KEY`：在当前 PowerShell 重新设置 Key；
+- JSON 连续三次校验失败：检查文件编码、缩短输入，或改用 `deepseek-v4-pro`；
+- GIF 不满意但 storyboard 正确：修改 storyboard 后本地重渲染，不必再次调用 LLM；
+- 文章非常长：优先选择论文中需要解释的核心章节，或按自然章节拆成数篇。
+
+## 8. 目录结构
 
 ```text
 ai-comic-gif-pipeline/
@@ -165,7 +257,7 @@ ai-comic-gif-pipeline/
 
 `node_modules` 不纳入项目，可通过 `npm.cmd install` 重建。
 
-## 8. 已验证项目
+## 9. 已验证项目
 
 - DeepSeek 真实两阶段 API 调用成功；
 - `plan.json`、`storyboard.json` 和四张 GIF 成功生成；
@@ -175,7 +267,7 @@ ai-comic-gif-pipeline/
 - `npm audit` 为 0 个漏洞；
 - 项目中没有 API Key。
 
-## 9. 当前限制
+## 10. 当前限制
 
 - 目前只有一种主要漫画版式；
 - 人物和图标的精细程度仍低于专业插画；
@@ -183,7 +275,7 @@ ai-comic-gif-pipeline/
 - GIF 文件较大，批量发布更适合 MP4/WebM；
 - 专业论文仍需人工检查 LLM 的内容取舍。
 
-## 10. 后续方向
+## 11. 后续方向
 
 1. 增加 before/after、分层和循环等模板；
 2. 建立统一 SVG 漫画资产库；
@@ -192,7 +284,7 @@ ai-comic-gif-pipeline/
 5. 迁移到 Remotion + SVG，支持 MP4、字幕和音频；
 6. 使用真实论文继续验证准确性和跨页一致性。
 
-## 11. 最终结论
+## 12. 最终结论
 
 项目证明：技术漫画 GIF 可以由 AI / Agent 高效辅助生成，但可靠方案不是让模型直接预测整段视频，而是让 LLM 负责内容理解和结构化决策，让模板与程序负责视觉准确性和可复现性。
 
