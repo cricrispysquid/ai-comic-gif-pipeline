@@ -141,7 +141,7 @@ npm.cmd run llm -- .\examples\long_article.md .\output\my_test
 
 ## 7. 如何使用自己的文章
 
-老师或其他使用者不需要修改 JavaScript，只需准备一篇 UTF-8 Markdown 或纯文本文章，并把文件放入项目目录。推荐结构：
+使用者不需要修改 JavaScript，只需准备一篇 UTF-8 Markdown 或纯文本文章，并把文件放入项目目录。推荐结构：
 
 ```text
 ai-comic-gif-pipeline/
