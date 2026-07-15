@@ -50,7 +50,8 @@ npm.cmd run llm -- .\examples\long_article.md .\output\my_test
 | `comic_pipeline.js` | 本地漫画排版与 GIF 渲染器 |
 | `output/final_demo/` | DeepSeek 真实端到端示例及中间 JSON |
 | `research_assets/` | 第一阶段原型及生成脚本 |
-| `linkedin_reference.gif` | 目标风格参考 |
+| `examples/long_article.md` | 测试长文章 |
+| `linkedin_reference.gif` | LinkedIn 提供的风格参考 |
 | `RESEARCH_PROCESS.md` | 调研与设计决策 |
 | `PROJECT_SUMMARY.md` | 最终实现总结 |
 
