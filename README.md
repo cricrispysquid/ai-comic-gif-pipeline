@@ -49,7 +49,7 @@ npm.cmd run llm -- .\examples\long_article.md .\output\my_test
 | `comic_pipeline.js` | 本地漫画排版与 GIF 渲染器 |
 | `examples/long_article.md` | 测试长文章 |
 | `output/final_demo/` | 真实 DeepSeek 规划生成的最终示例 |
-| `linkedin_reference.gif` | 老师提供的风格参考 |
+| `linkedin_reference.gif` | LinkedIn提供的风格参考 |
 | `RESEARCH_PROCESS.md` | 完整调研、路线比较和迭代过程 |
 | `PROJECT_SUMMARY.md` | 项目架构、实现和结论 |
 
