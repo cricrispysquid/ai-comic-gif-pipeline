@@ -1,0 +1,83 @@
+{
+  "title": "Why Schema-Guided Memory Makes Agents More Reliable",
+  "language": "en",
+  "thesis": "Defining a structured ontology before storing memories enables agents to build precise, queryable knowledge graphs that resist hallucination and outdated information.",
+  "audience": "Developers and AI practitioners building agent memory systems",
+  "glossary": [
+    {
+      "term": "Ontology",
+      "definition": "A formal specification of entity types, attributes, and relationships allowed in the memory graph."
+    },
+    {
+      "term": "Pydantic model",
+      "definition": "A Python library that defines data schemas with validation; used here to enforce memory structure."
+    },
+    {
+      "term": "Entity resolution",
+      "definition": "The process of merging different mentions (e.g., 'OpenAI', 'Open AI') into a single canonical entity."
+    },
+    {
+      "term": "Temporal validity",
+      "definition": "The property that facts are associated with time intervals, allowing outdated beliefs to be ignored rather than overwritten."
+    },
+    {
+      "term": "Knowledge graph",
+      "definition": "A graph whose nodes represent entities and edges represent relationships, often with typed attributes."
+    },
+    {
+      "term": "Schema",
+      "definition": "A predefined structure that dictates what types of information can be stored and how they relate."
+    },
+    {
+      "term": "Edge constraint",
+      "definition": "A rule limiting which entity types can be connected by a specific relationship, e.g., only 'Person' can 'own' a 'Project'."
+    }
+  ],
+  "visual_style": {
+    "palette": "pastel pink, lavender, mint green, pale yellow, soft blue",
+    "character": "a small robot with a blueprint roll",
+    "recurring_metaphor": "architect's blueprint or scaffolding that imposes order on a chaotic pile of sticky notes"
+  },
+  "sections": [
+    {
+      "id": "problem-unstructured-memory",
+      "heading": "The Problem: Unstructured Memory Fails",
+      "purpose": "Explain why leaving memory structure open-ended leads to vague entities, high noise, and unreliable queries.",
+      "key_points": [
+        "Raw text stored without schema lets the LLM invent vague entity types like 'Topic' and generic edges like 'RELATES_TO'.",
+        "Long context increases noise, duplicates facts, and lets outdated statements compete with current ones.",
+        "Without structure, precise queries cannot reliably retrieve the right information."
+      ]
+    },
+    {
+      "id": "ontology-before-extraction",
+      "heading": "Define an Ontology First",
+      "purpose": "Show that defining entity types, attributes, and descriptions before information extraction ensures consistent, searchable memory.",
+      "key_points": [
+        "Pydantic models pre-define allowed entity types and typed attributes.",
+        "The extraction model searches for domain-specific concepts instead of guessing a schema on the fly.",
+        "Edge definitions constrain which entity types may be connected, rejecting invalid relationships early."
+      ]
+    },
+    {
+      "id": "entity-resolution",
+      "heading": "Resolve Entities Over Time",
+      "purpose": "Explain how entity resolution and temporal fields keep the graph consistent and up-to-date.",
+      "key_points": [
+        "Entity resolution merges different surface forms (e.g., 'OpenAI', 'Open AI') into a single node.",
+        "Temporal fields track when a fact is valid, distinguishing current from outdated truths.",
+        "New facts invalidate older ones within a validity window without silent overwriting."
+      ]
+    },
+    {
+      "id": "result-queryable-graph",
+      "heading": "The Result: A Queryable Model of the Domain",
+      "purpose": "Summarize the benefits: the schema acts as both a storage contract and a reasoning boundary.",
+      "key_points": [
+        "A schema-guided temporal knowledge graph becomes a precise, queryable model of the domain.",
+        "The schema is both a storage contract and a reasoning boundary: relationships that cannot be represented cannot be casually hallucinated.",
+        "Memory remains reliable, up-to-date, and resistant to noise."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "style": "pastel-handdrawn",
+  "title": "Why Schema-Guided Memory Makes Agents More Reliable",
+  "pages": [
+    {
+      "title": "The Problem: Unstructured Memory Fails",
+      "section": "problem-unstructured-memory",
+      "pageLabel": "1",
+      "cards": [
+        {
+          "title": "Vague Entities",
+          "body": "Raw text stored without schema lets the LLM invent vague entity types like 'Topic' and generic edges like 'RELATES_TO'.",
+          "icon": "chat"
+        },
+        {
+          "title": "Noise & Duplicates",
+          "body": "Long context increases noise, duplicates facts, and lets outdated statements compete with current ones.",
+          "icon": "graph"
+        },
+        {
+          "title": "Unreliable Queries",
+          "body": "Without structure, precise queries cannot reliably retrieve the right information.",
+          "icon": "brain"
+        }
+      ]
+    },
+    {
+      "title": "Define an Ontology First",
+      "section": "ontology-before-extraction",
+      "pageLabel": "1",
+      "cards": [
+        {
+          "title": "Pydantic Models",
+          "body": "Pydantic models pre-define allowed entity types and typed attributes.",
+          "icon": "schema"
+        },
+        {
+          "title": "Focused Extraction",
+          "body": "The extraction model searches for domain-specific concepts instead of guessing a schema on the fly.",
+          "icon": "brain"
+        },
+        {
+          "title": "Edge Constraints",
+          "body": "Edge definitions constrain which entity types may be connected, rejecting invalid relationships early.",
+          "icon": "graph"
+        }
+      ]
+    },
+    {
+      "title": "Resolve Entities Over Time",
+      "section": "entity-resolution",
+      "pageLabel": "1",
+      "cards": [
+        {
+          "title": "Entity Resolution",
+          "body": "Entity resolution merges different surface forms (e.g., 'OpenAI', 'Open AI') into a single node.",
+          "icon": "graph"
+        },
+        {
+          "title": "Temporal Validity",
+          "body": "Temporal fields track when a fact is valid, distinguishing current from outdated truths.",
+          "icon": "schema"
+        },
+        {
+          "title": "Graceful Updates",
+          "body": "New facts invalidate older ones within a validity window without silent overwriting.",
+          "icon": "brain"
+        }
+      ]
+    },
+    {
+      "title": "The Result: A Queryable Model of the Domain",
+      "section": "result-queryable-graph",
+      "pageLabel": "1",
+      "cards": [
+        {
+          "title": "Precise Knowledge Graph",
+          "body": "A schema-guided temporal knowledge graph becomes a precise, queryable model of the domain.",
+          "icon": "graph"
+        },
+        {
+          "title": "Built-in Hallucination Guard",
+          "body": "The schema is both a storage contract and a reasoning boundary: relationships that cannot be represented cannot be casually hallucinated.",
+          "icon": "schema"
+        }
+      ]
+    }
+  ]
+}

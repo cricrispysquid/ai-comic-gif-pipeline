@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "comic": "node comic_pipeline.js",
+    "llm": "node generate_with_llm.mjs"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.80",
+    "gif-encoder-2": "^1.0.5",
+    "openai": "^6.0.0",
+    "zod": "^4.0.0"
+  }
+}

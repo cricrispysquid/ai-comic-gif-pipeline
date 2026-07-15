@@ -1,0 +1,10 @@
+{
+  "source": "storyboard.json",
+  "title": "Why Schema-Guided Memory Makes Agents More Reliable",
+  "pages": [
+    "01-problem-unstructured-memory.gif",
+    "02-ontology-before-extraction.gif",
+    "03-entity-resolution.gif",
+    "04-result-queryable-graph.gif"
+  ]
+}
