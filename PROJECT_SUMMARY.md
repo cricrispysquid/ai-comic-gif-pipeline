@@ -1,192 +1,117 @@
-# AI / Agent 漫画信息图 GIF 流水线：项目总结
+# AI / Agent 漫画信息图 GIF 流水线：最终项目总结
 
-项目入口见 `README.md`；完整的调研、技术比较和迭代过程见 `RESEARCH_PROCESS.md`。
+本文档承接 `RESEARCH_PROCESS.md`，集中说明调研之后真正完成的系统，包括 LLM 接入、数据流、渲染器、DeepSeek 验证结果和运行方式。
 
-## 项目目标
-
-本项目调研并验证了如何用 AI / Agent 高效生成类似 LinkedIn 技术文章中的漫画风信息图 GIF。参考作品不是单纯的文生视频，而是“高质量静态手绘信息图 + 克制的局部循环动画”：粉彩卡片、手写字体、漫画人物和图标负责亲和力，严格的文字、箭头与流程排版负责准确性。
-
-最终采用的思路是：
+## 1. 最终成果
 
 ```text
-文章 / Markdown
-      ↓
-全文规划与语义分段
-      ↓
-结构化 storyboard.json
-      ↓
-漫画模板自动排版
-      ↓
-局部循环动画
-      ↓
+Markdown / 纯文本文章
+          ↓
+LLM 调用 1：阅读全文与全局规划
+          ↓
+plan.json
+          ↓
+LLM 调用 2：生成分页 storyboard
+          ↓
+storyboard.json + Zod 校验
+          ↓
+本地 Canvas 漫画模板
+          ↓
 多张 GIF + manifest.json
 ```
 
-## 关键结论
+当前已经实现：
 
-1. **图像模型负责“可爱”，程序负责“正确”**。人物和插画可以由图像模型生成，但正文、箭头、步骤和布局应由 SVG/Canvas/Remotion 等确定性工具处理。
-2. **长文章不能逐段独立生成整张图**。应先读取全文，建立统一大纲、术语表、角色和色板，再逐章节生成分镜，否则容易产生重复、前后矛盾和风格漂移。
-3. **模板与资产复用是效率核心**。真正的规模化方案应复用人物、图标、配色、版式和动画预设，而不是每篇文章从零生成。
-4. **必须有渲染后检查**。本次测试就发现并修复了英文断词和四卡页面过密的问题，最终把每页限制为最多三个信息卡。
+- DeepSeek 和 OpenAI 双供应商 API；
+- 长文章的全文规划和语义分页；
+- 结构化输出和本地 Zod 校验；
+- DeepSeek 空响应、非法 JSON 或字段错误时最多三次重试；
+- 每页 1–3 个信息卡和中英文自适应换行；
+- 粉彩漫画模板、角色浮动、箭头流动和卡片呼吸；
+- 保存 `plan.json`、`storyboard.json` 和 `manifest.json`；
+- 不调用 LLM 的本地规则基线。
 
-## 当前程序
+## 2. 两阶段 LLM 设计
 
-核心程序为 `comic_pipeline.js`，渲染部分依赖：
+### 阶段一：全文规划
 
-- `@napi-rs/canvas`
-- `gif-encoder-2`
+`generate_with_llm.mjs` 首先把全文交给模型，输出标题、主旨、受众、术语表、统一视觉设定，以及章节顺序、目的和关键要点。结果保存为 `plan.json`。
 
-它支持输入 Markdown、纯文本或结构化 JSON，并自动完成：
+这一步解决长文章不能逐段独立生成的问题：模型必须先理解全文，才能决定哪些内容需要合并、拆分或省略。
 
-- 按 Markdown 标题保留文章语义章节；
-- 将过长段落拆成句群；
-- 每张图最多安排三个信息卡；
-- 生成粉彩漫画风页面；
-- 添加角色浮动、箭头流动和卡片呼吸；
-- 输出两秒无缝循环 GIF；
-- 保存中间 `storyboard.json` 和结果 `manifest.json`。
+### 阶段二：页面分镜
 
-## 目录结构
+第二次调用只根据全局 plan 生成 storyboard。每页包含 1–3 张信息卡，每张卡包含短标题、正文和语义图标。结果由 Zod Schema 验证后保存为 `storyboard.json`。
+
+渲染器不依赖具体模型，因此 DeepSeek 和 OpenAI 共享同一份数据契约。
+
+## 3. DeepSeek 与 OpenAI 接入
+
+程序通过环境变量选择供应商：
 
 ```text
-gif_test/
-├─ comic_pipeline.js          # 核心流水线
-├─ generate_with_llm.mjs      # DeepSeek/OpenAI 两阶段 LLM 规划
-├─ package.json               # 命令与依赖声明
-├─ package-lock.json          # 锁定依赖版本
-├─ README.md                  # 项目入口和快速运行
-├─ PROJECT_SUMMARY.md         # 本文档
-├─ RESEARCH_PROCESS.md        # 调研和迭代过程
-├─ research_assets/
-│  ├─ cross_attention_prototype.js   # 第一阶段原型生成脚本
-│  └─ cross_attention_prototype.gif  # 报告内嵌展示
-├─ linkedin_reference.gif     # LinkedIn 参考 GIF
-├─ examples/
-│  └─ long_article.md         # 长文章测试输入
-└─ output/final_demo/
-   ├─ plan.json               # DeepSeek 全文规划
-   ├─ storyboard.json         # DeepSeek 结构化分镜
-   ├─ manifest.json           # 输出索引
-   └─ 01...04-*.gif           # 四张最终演示结果
+DEEPSEEK_API_KEY 存在 → 默认使用 DeepSeek
+否则                 → 使用 OpenAI
+LLM_PROVIDER          → 可显式覆盖
 ```
 
-`node_modules` 不保留，因为可通过 `npm install` 重建。
+DeepSeek 配置：
 
-## 安装与运行
+```text
+Base URL：https://api.deepseek.com
+默认模型：deepseek-v4-flash
+输出方式：JSON Output + 本地 Zod 校验
+```
 
-在 PowerShell 中进入项目目录：
+OpenAI 配置：
+
+```text
+默认模型：gpt-5.6-luna
+输出方式：Responses API + Zod Structured Outputs
+```
+
+两种供应商都只负责内容规划，不参与 GIF 像素渲染。
+
+## 4. 本地渲染器
+
+`comic_pipeline.js` 使用 `@napi-rs/canvas` 和 `gif-encoder-2`。它既能读取 Markdown/纯文本并使用本地规则生成 storyboard，也能直接渲染 LLM 或人工生成的 `storyboard.json`。
+
+渲染器负责：粉彩背景、漫画人物、语义图标、文字换行、信息卡布局、角色浮动、箭头流动、卡片呼吸、两秒循环，以及 GIF/manifest 输出。
+
+## 5. DeepSeek 真实验证
+
+示例文章 `examples/long_article.md` 已完成真实 DeepSeek 两阶段调用。模型先生成全文主旨、受众、术语表、视觉设定和章节要点，再生成四页 storyboard：
+
+1. 非结构化记忆的问题；
+2. 提取前定义 ontology；
+3. 实体与时间解析；
+4. 可查询知识图谱的结果。
+
+![DeepSeek 最终示例第一页](output/final_demo/01-problem-unstructured-memory.gif)
+
+`output/final_demo/` 保留了完整链路：
+
+```text
+plan.json
+storyboard.json
+manifest.json
+01-problem-unstructured-memory.gif
+02-ontology-before-extraction.gif
+03-entity-resolution.gif
+04-result-queryable-graph.gif
+```
+
+即：`原文 → plan → storyboard → GIF` 全程可追踪和人工修改。
+
+## 6. 安装与运行
+
+安装：
 
 ```powershell
-npm install
+npm.cmd install
 ```
 
-运行内置长文章测试：
-
-```powershell
-npm run comic -- .\examples\long_article.md .\output\sample
-```
-
-测试自己的文章：
-
-```powershell
-npm run comic -- .\你的文章.md .\output\你的文章
-```
-
-程序也可以直接接受人工或 AI 生成的 storyboard：
-
-```powershell
-node .\comic_pipeline.js .\storyboard.json .\output\result
-```
-
-## 长文章的 AI 分段策略
-
-推荐使用两阶段生成：
-
-### 第一阶段：全文规划
-
-AI 阅读全文后输出：
-
-- 文章的一句话主旨；
-- 章节及阅读顺序；
-- 统一术语表；
-- 应保留和应省略的信息；
-- 全局人物、图标、配色和视觉比喻。
-
-### 第二阶段：章节分镜
-
-在全局约束下逐章节输出 1–N 页，每页包含 1–3 个信息卡。段落不是页面单位；一个段落可以拆成多个要点，多个短段也可以合并为一个叙事步骤。
-
-当前程序用确定性规则完成这一过程，可作为不调用 AI 的基线。以后接入 LLM 时，只需让模型生成相同结构的 `storyboard.json`，渲染器无需修改。
-
-## 已完成的验证
-
-纯规则基线曾将示例长文章生成为五张 GIF。第一次渲染采用每页四卡，出现阅读密度过高；经过关键帧检查后改为每页最多三卡。随后接入 DeepSeek 两阶段规划，模型先输出全局 `plan.json`，再生成 `storyboard.json`，最终得到四张连续 GIF。最终交付仅保留更有代表性的 DeepSeek 版本。
-
-## 当前限制
-
-- 漫画人物和图标目前由 Canvas 程序绘制，风格统一但细节仍不及专业插画；
-- 自动分段是启发式规则，还没有真正调用 LLM 理解重要性和叙事关系；
-- 目前只有一种主要版式；
-- GIF 体积较大，正式发布时更适合优先导出 MP4/WebM，再按需要转为优化 GIF；
-- 暂未实现自动视觉评分和局部重排。
-
-## 建议的下一步
-
-1. 用一篇真实文章测试当前流水线；
-2. 根据文章结果确定 storyboard JSON 的最终字段；
-3. 接入 LLM 做“全文规划 + 分章节分镜”；
-4. 建立统一漫画角色和 SVG 图标资产库；
-5. 增加 before/after、分层结构、循环结构等模板；
-6. 引入关键帧视觉检查和自动局部修复；
-7. 若要批量生产，迁移到 Remotion + SVG，并默认输出 MP4。
-
-当前版本已经证明：同一套程序可以把长文章拆成连续的漫画信息图 GIF。下一次验证的重点不再是“能不能生成”，而是 AI 对真实文章的内容取舍、叙事分段和视觉一致性是否足够好。
-
-## LLM API 接入
-
-`generate_with_llm.mjs` 已实现两阶段 OpenAI API 流程：第一次阅读全文并生成全局规划，第二次把规划转换为严格校验的 storyboard，最后调用本地渲染器。
-
-安装依赖：
-
-```powershell
-npm install
-```
-
-只在当前 PowerShell 窗口设置密钥：
-
-```powershell
-$env:OPENAI_API_KEY="你的 API Key"
-```
-
-不要把真实密钥写进 `.env.example`、源代码或提交记录。
-
-完整运行：
-
-```powershell
-npm run llm -- .\article.md .\output\article
-```
-
-只测试全文规划，不产生第二次调用和 GIF：
-
-```powershell
-npm run llm -- .\article.md .\output\article --plan-only
-```
-
-生成 plan 和 storyboard，但暂不渲染：
-
-```powershell
-npm run llm -- .\article.md .\output\article --no-render
-```
-
-默认模型为 `gpt-5.6-luna`，可临时切换：
-
-```powershell
-$env:OPENAI_MODEL="gpt-5.6-terra"
-```
-
-### 使用 DeepSeek API
-
-程序也支持 DeepSeek 的 OpenAI-compatible Chat Completions 和 JSON Output。只在当前 PowerShell 窗口设置：
+DeepSeek：
 
 ```powershell
 $env:DEEPSEEK_API_KEY="你的 DeepSeek API Key"
@@ -194,10 +119,81 @@ $env:LLM_PROVIDER="deepseek"
 $env:LLM_MODEL="deepseek-v4-flash"
 ```
 
-然后使用相同命令：
+只生成 plan：
 
 ```powershell
-npm.cmd run llm -- .\examples\long_article.md .\output\deepseek-test --plan-only
+npm.cmd run llm -- .\examples\long_article.md .\output\my_test --plan-only
 ```
 
-程序会对 DeepSeek 返回的 JSON 进行本地 Zod 校验；若返回空内容、非法 JSON 或不符合 storyboard Schema，会自动重试，最多三次。不要同时依赖两个供应商的 Key；如果两个环境变量都存在，请显式设置 `LLM_PROVIDER`。
+生成 plan 和 storyboard，但不渲染：
+
+```powershell
+npm.cmd run llm -- .\examples\long_article.md .\output\my_test --no-render
+```
+
+完整运行：
+
+```powershell
+npm.cmd run llm -- .\examples\long_article.md .\output\my_test
+```
+
+复杂文章可切换 `deepseek-v4-pro`。所有 Key 都只能设置在本地环境变量中。
+
+## 7. 目录结构
+
+```text
+ai-comic-gif-pipeline/
+├─ README.md
+├─ RESEARCH_PROCESS.md
+├─ PROJECT_SUMMARY.md
+├─ generate_with_llm.mjs
+├─ comic_pipeline.js
+├─ package.json
+├─ package-lock.json
+├─ .env.example
+├─ linkedin_reference.gif
+├─ examples/long_article.md
+├─ research_assets/
+│  ├─ cross_attention_prototype.js
+│  └─ cross_attention_prototype.gif
+└─ output/final_demo/
+   ├─ plan.json
+   ├─ storyboard.json
+   ├─ manifest.json
+   └─ 01...04-*.gif
+```
+
+`node_modules` 不纳入项目，可通过 `npm.cmd install` 重建。
+
+## 8. 已验证项目
+
+- DeepSeek 真实两阶段 API 调用成功；
+- `plan.json`、`storyboard.json` 和四张 GIF 成功生成；
+- DeepSeek JSON 输出经过本地 Schema 校验；
+- 无 Key 时安全退出；
+- Node 24 环境安装和渲染成功；
+- `npm audit` 为 0 个漏洞；
+- 项目中没有 API Key。
+
+## 9. 当前限制
+
+- 目前只有一种主要漫画版式；
+- 人物和图标的精细程度仍低于专业插画；
+- 尚未自动调用视觉模型检查关键帧；
+- GIF 文件较大，批量发布更适合 MP4/WebM；
+- 专业论文仍需人工检查 LLM 的内容取舍。
+
+## 10. 后续方向
+
+1. 增加 before/after、分层和循环等模板；
+2. 建立统一 SVG 漫画资产库；
+3. 自动抽取关键帧并进行视觉评分；
+4. 只重排或重绘失败页面；
+5. 迁移到 Remotion + SVG，支持 MP4、字幕和音频；
+6. 使用真实论文继续验证准确性和跨页一致性。
+
+## 11. 最终结论
+
+项目证明：技术漫画 GIF 可以由 AI / Agent 高效辅助生成，但可靠方案不是让模型直接预测整段视频，而是让 LLM 负责内容理解和结构化决策，让模板与程序负责视觉准确性和可复现性。
+
+> LLM 负责理解和取舍，插画资产负责亲和力，程序负责准确与稳定。
